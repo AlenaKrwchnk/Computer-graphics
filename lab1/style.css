@@ -1,0 +1,51 @@
+:root{ --card-bg:#fff; --gap:12px; font-family:Inter, system-ui, Arial; }
+    body{background:#f3f4f6; padding:28px;}
+    .app{max-width:1300px;margin:0 auto;display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start}
+    .card{background:none;padding:16px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.06)}
+    h1{font-size:18px;margin:0 0 12px}
+    .model{margin-bottom:14px}
+    .row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+    label{width:56px;font-size:13px}
+    input[type=range]{flex:1}
+    input.number{width:78px;padding:6px;border-radius:6px;border:1px solid #ddd}
+    .preview{height:160px;border-radius:10px;box-shadow:inset 0 0 0 1px rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:center;font-weight:600}
+    .hex{font-family:monospace}
+    .small{font-size:13px;color:#555}
+    .palette{display:flex;gap:8px;margin-top:8px}
+    .swatch{width:28px;height:28px;border-radius:6px;cursor:pointer;border:1px solid rgba(0,0,0,0.06)}
+    .footer{margin-top:12px;font-size:13px;color:#444}
+    @media (max-width:900px){.app{grid-template-columns:1fr;}
+    }
+
+    .palette-grid {
+      width: 280px;
+      height: 160px;
+      background: linear-gradient(to right, #fff, rgba(255,255,255,0)) top,
+                  linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00) center,
+                  linear-gradient(to top, #000, rgba(0,0,0,0)) bottom;
+      background-blend-mode: multiply;
+      position: relative;
+      cursor: crosshair;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    .palette-cursor {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 2px #000;
+      pointer-events: none;
+      transform: translate(-6px, -6px);
+    }
+
+    .swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 1px solid rgba(0,0,0,0.2);
+    }
+    .palette { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }

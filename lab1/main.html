@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CMYK  RGB  HSV </title>
+ 
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app">
+    <div class="card">
+      <h1>Цветовые модели — CMYK  RGB  HSV </h1>
+      <p class="small"></p>
+
+      <div id="models">
+        <div class="model card" style="margin-top:12px">
+          <strong>CMYK</strong>
+          <div class="row"><label for="c">C</label><input id="c_s" type="range" min="0" max="100" value="0"><input id="c_n" class="number" type="number" min="0" max="100" value="0">%</div>
+          <div class="row"><label for="m">M</label><input id="m_s" type="range" min="0" max="100" value="0"><input id="m_n" class="number" type="number" min="0" max="100" value="0">%</div>
+          <div class="row"><label for="y">Y</label><input id="y_s" type="range" min="0" max="100" value="0"><input id="y_n" class="number" type="number" min="0" max="100" value="0">%</div>
+          <div class="row"><label for="k">K</label><input id="k_s" type="range" min="0" max="100" value="0"><input id="k_n" class="number" type="number" min="0" max="100" value="0">%</div>
+        </div>
+
+        <div class="model card">
+          <strong>RGB</strong>
+          <div class="row"><label>R</label><input id="r_s" type="range" min="0" max="255" value="255"><input id="r_n" class="number" type="number" min="0" max="255" value="255"></div>
+          <div class="row"><label>G</label><input id="g_s" type="range" min="0" max="255" value="255"><input id="g_n" class="number" type="number" min="0" max="255" value="255"></div>
+          <div class="row"><label>B</label><input id="b_s" type="range" min="0" max="255" value="255"><input id="b_n" class="number" type="number" min="0" max="255" value="255"></div>
+        </div>
+
+        <div class="model card">
+          <strong>HSV (Hue, Saturation, Value)</strong>
+<div class="row"><label>H</label><input id="h_s" type="range" min="0" max="360" value="0"><input id="h_n" class="number" type="number" min="0" max="360" value="0"></div>
+<div class="row"><label>S</label><input id="s_s" type="range" min="0" max="100" value="0"><input id="s_n" class="number" type="number" min="0" max="100" value="0">%</div>
+<div class="row"><label>V</label><input id="v_s" type="range" min="0" max="100" value="100"><input id="v_n" class="number" type="number" min="0" max="100" value="100">%</div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <div class="card" style="background: none; box-shadow: none;">
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div style="position: relative;">
+          <div class="preview" id="preview">#FFFFFF</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+            <div>
+              <div>Hex: <span class="hex" id="hex">#FFFFFF</span></div>
+              <div class="small" id="info">RGB(255,255,255) • CMYK(0,0,0,0) • HSV(0,100,0)</div>
+            </div>
+            <div>
+              <input id="colorpicker" type="color" value="#ffffff" title="Выбрать цвет из палитры">
+            </div>
+          </div>
+<div class="palette-grid" id="paletteGrid">
+            <div class="palette-cursor" id="paletteCursor"></div>
+          </div>
+          <div class="palette" id="preset">
+           
+          </div>
+        </div>
+      </div>
+      <div class="footer"></div>
+    </div>
+  </div>
+
+  <script>
+let internalUpdate = false;
+
+
+const els = {
+  c_s: document.getElementById('c_s'), c_n: document.getElementById('c_n'),
+  m_s: document.getElementById('m_s'), m_n: document.getElementById('m_n'),
+  y_s: document.getElementById('y_s'), y_n: document.getElementById('y_n'),
+  k_s: document.getElementById('k_s'), k_n: document.getElementById('k_n'),
+  r_s: document.getElementById('r_s'), r_n: document.getElementById('r_n'),
+  g_s: document.getElementById('g_s'), g_n: document.getElementById('g_n'),
+  b_s: document.getElementById('b_s'), b_n: document.getElementById('b_n'),
+  h_s: document.getElementById('h_s'), h_n: document.getElementById('h_n'),
+  s_s: document.getElementById('s_s'), s_n: document.getElementById('s_n'),
+  v_s: document.getElementById('v_s'), v_n: document.getElementById('v_n'),
+  preview: document.getElementById('preview'), hex: document.getElementById('hex'),
+  info: document.getElementById('info'), colorpicker: document.getElementById('colorpicker'),
+  preset: document.getElementById('preset')
+};
+
+
+const presetColors = ['#FFFFFF','#000000','#FF0000','#00FF00','#0000FF','#FFFF00','#FF00FF','#00FFFF','#C0C0C0','#808080','#800000','#008000','#000080'];
+for (const c of presetColors){
+  const d = document.createElement('div'); 
+  d.className='swatch'; 
+  d.style.background = c; 
+  d.title = c; 
+  d.addEventListener('click', ()=> setFromHex(c)); 
+  els.preset.appendChild(d);
+}
+
+
+function clamp(v, a, b){ return Math.min(b, Math.max(a, v)); }
+
+
+function cmykToRgb(c,m,y,k){
+  const C=c/100, M=m/100, Y=y/100, K=k/100;
+  const r = Math.round(255*(1 - Math.min(1, C*(1-K)+K)) );
+  const g = Math.round(255*(1 - Math.min(1, M*(1-K)+K)) );
+  const b = Math.round(255*(1 - Math.min(1, Y*(1-K)+K)) );
+  return [clamp(r,0,255), clamp(g,0,255), clamp(b,0,255)];
+}
+
+function rgbToCmyk(r,g,b){
+  const R=r/255, G=g/255, B=b/255;
+  const K = 1 - Math.max(R,G,B);
+  if (K >= 1 - 1e-12) return [0,0,0,100];
+  const C = (1 - R - K) / (1 - K);
+  const M = (1 - G - K) / (1 - K);
+  const Y = (1 - B - K) / (1 - K);
+  return [Math.round(C*100), Math.round(M*100), Math.round(Y*100), Math.round(K*100)];
+}
+
+
+function rgbToHsv(r, g, b) {
+  let R = r / 255, G = g / 255, B = b / 255;
+  let max = Math.max(R, G, B), min = Math.min(R, G, B);
+  let h = 0, s = 0, v = max;
+
+  let d = max - min;
+  s = max === 0 ? 0 : d / max;
+
+  if (max !== min) {
+    switch (max) {
+      case R: h = (G - B) / d + (G < B ? 6 : 0); break;
+      case G: h = (B - R) / d + 2; break;
+      case B: h = (R - G) / d + 4; break;
+    }
+    h *= 60;
+  }
+  return [Math.round(h), Math.round(s*100), Math.round(v*100)];
+}
+
+function hsvToRgb(h, s, v) {
+  s /= 100; v /= 100;
+  let C = v*s;
+  let X = C*(1 - Math.abs((h/60)%2 - 1));
+  let m = v - C;
+  let r1,g1,b1;
+  if(h<60) [r1,g1,b1]=[C,X,0];
+  else if(h<120) [r1,g1,b1]=[X,C,0];
+  else if(h<180) [r1,g1,b1]=[0,C,X];
+  else if(h<240) [r1,g1,b1]=[0,X,C];
+  else if(h<300) [r1,g1,b1]=[X,0,C];
+  else [r1,g1,b1]=[C,0,X];
+  return [Math.round((r1+m)*255), Math.round((g1+m)*255), Math.round((b1+m)*255)];
+}
+
+
+function toHex(r,g,b){
+  return '#' + [r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('').toUpperCase();
+}
+
+
+function readCMYK(){ return [Number(els.c_n.value), Number(els.m_n.value), Number(els.y_n.value), Number(els.k_n.value)]; }
+function readRGB(){ return [Number(els.r_n.value), Number(els.g_n.value), Number(els.b_n.value)]; }
+function readHSV(){ return [Number(els.h_n.value), Number(els.s_n.value), Number(els.v_n.value)]; }
+
+
+function updatePreviewFromRGB(r,g,b){
+  const hex = toHex(r,g,b);
+  els.preview.style.background = hex;
+  els.preview.textContent = hex;
+  els.hex.textContent = hex;
+  els.colorpicker.value = hex;
+  const [c,m,y,k] = rgbToCmyk(r,g,b);
+  const [h,s,v] = rgbToHsv(r,g,b);
+  els.info.textContent = `RGB(${r},${g},${b}) • CMYK(${c},${m},${y},${k}) • HSV(${h},${s},${v})`;
+}
+
+
+function setCMYK(c,m,y,k){
+  internalUpdate=true;
+  els.c_s.value = els.c_n.value = clamp(Math.round(c),0,100);
+  els.m_s.value = els.m_n.value = clamp(Math.round(m),0,100);
+  els.y_s.value = els.y_n.value = clamp(Math.round(y),0,100);
+  els.k_s.value = els.k_n.value = clamp(Math.round(k),0,100);
+  const [r,g,b] = cmykToRgb(c,m,y,k);
+  setRGB(r,g,b);
+  const [h,s,v] = rgbToHsv(r,g,b);
+  setHSV(h,s,v);
+  updatePreviewFromRGB(r,g,b);
+  internalUpdate=false;
+}
+
+function setRGB(r,g,b){
+  internalUpdate=true;
+  els.r_s.value = els.r_n.value = clamp(Math.round(r),0,255);
+  els.g_s.value = els.g_n.value = clamp(Math.round(g),0,255);
+  els.b_s.value = els.b_n.value = clamp(Math.round(b),0,255);
+  const [c,m,y,k] = rgbToCmyk(r,g,b);
+  els.c_s.value = els.c_n.value = c;
+  els.m_s.value = els.m_n.value = m;
+  els.y_s.value = els.y_n.value = y;
+  els.k_s.value = els.k_n.value = k;
+  const [h,s,v] = rgbToHsv(r,g,b);
+  els.h_s.value = els.h_n.value = h;
+  els.s_s.value = els.s_n.value = s;
+  els.v_s.value = els.v_n.value = v;
+  updatePreviewFromRGB(r,g,b);
+  internalUpdate=false;
+}
+
+function setHSV(h,s,v){
+  internalUpdate=true;
+  els.h_s.value = els.h_n.value = clamp(Math.round(h),0,360);
+  els.s_s.value = els.s_n.value = clamp(Math.round(s),0,100);
+  els.v_s.value = els.v_n.value = clamp(Math.round(v),0,100);
+  const [r,g,b] = hsvToRgb(h,s,v);
+  setRGB(r,g,b);
+  const [c,m,y,k] = rgbToCmyk(r,g,b);
+  els.c_s.value = els.c_n.value = c;
+  els.m_s.value = els.m_n.value = m;
+  els.y_s.value = els.y_n.value = y;
+  els.k_s.value = els.k_n.value = k;
+  updatePreviewFromRGB(r,g,b);
+  internalUpdate=false;
+}
+
+
+function onCMYKChange(){ 
+  if (internalUpdate) return;
+  const [c,m,y,k] = readCMYK(); 
+  const [r,g,b] = cmykToRgb(c,m,y,k); 
+  setRGB(r,g,b); 
+  const [h,s,v] = rgbToHsv(r,g,b);
+  setHSV(h,s,v);
+}
+function onRGBChange(){ 
+  if (internalUpdate) return; 
+  const [r,g,b] = readRGB(); 
+  const [c,m,y,k] = rgbToCmyk(r,g,b); 
+  els.c_s.value = els.c_n.value = c; 
+  els.m_s.value = els.m_n.value = m; 
+  els.y_s.value = els.y_n.value = y; 
+  els.k_s.value = els.k_n.value = k; 
+  const [h,s,v] = rgbToHsv(r,g,b);
+  els.h_s.value = els.h_n.value = h;
+  els.s_s.value = els.s_n.value = s;
+  els.v_s.value = els.v_n.value = v;
+  updatePreviewFromRGB(r,g,b); 
+}
+function onHSVChange(){
+  if (internalUpdate) return;
+  const [h,s,v] = readHSV();
+  const [r,g,b] = hsvToRgb(h,s,v);
+  setRGB(r,g,b);
+  setCMYK(...rgbToCmyk(r,g,b));
+}
+
+
+const pairs = [ ['c_s','c_n'], ['m_s','m_n'], ['y_s','y_n'], ['k_s','k_n'], ['r_s','r_n'], ['g_s','g_n'], ['b_s','b_n'], ['h_s','h_n'], ['v_s','v_n'], ['s_s','s_n'] ];
+for (const [s,n] of pairs){
+  const sEl = els[s], nEl = els[n];
+  sEl.addEventListener('input', ()=>{
+    if (internalUpdate) return; 
+    nEl.value = sEl.value;
+    if (['c_s','m_s','y_s','k_s'].includes(s)) onCMYKChange();
+    else if (['r_s','g_s','b_s'].includes(s)) onRGBChange();
+    else onHSVChange();
+  });
+  nEl.addEventListener('input', ()=>{
+    if (internalUpdate) return; 
+    sEl.value = nEl.value;
+    if (['c_n','m_n','y_n','k_n'].includes(n)) onCMYKChange();
+    else if (['r_n','g_n','b_n'].includes(n)) onRGBChange();
+    else onHSVChange();
+  });
+}
+
+
+function setFromHex(hex){
+  const c = hex.replace('#',''); 
+  if (c.length!==6) return; 
+  const r = parseInt(c.slice(0,2),16), g = parseInt(c.slice(2,4),16), b = parseInt(c.slice(4,6),16);
+  setRGB(r,g,b);
+}
+els.colorpicker.addEventListener('input', ()=> setFromHex(els.colorpicker.value) );
+
+
+setRGB(255,255,255);
+
+
+window.__colorApp = { setRGB, setCMYK, setHSV, cmykToRgb, rgbToCmyk, rgbToHsv, hsvToRgb };
+
+
+const grid = document.getElementById('paletteGrid');
+const cursor = document.getElementById('paletteCursor');
+
+function pickColorFromGrid(e) {
+  const rect = grid.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const ctx = getPaletteContext();
+  const pixel = ctx.getImageData(x, y, 1, 1).data;
+  const [r,g,b] = pixel;
+  setRGB(r,g,b);
+  cursor.style.left = x + 'px';
+  cursor.style.top = y + 'px';
+}
+
+function getPaletteContext() {
+  if (!window.__paletteCtx) {
+    const c = document.createElement('canvas');
+    c.width = 280; c.height = 160;
+    const ctx = c.getContext('2d');
+
+    const hueGrad = ctx.createLinearGradient(0, 0, c.width, 0);
+    hueGrad.addColorStop(0.0, "#FF0000");
+    hueGrad.addColorStop(0.17, "#FFFF00");
+    hueGrad.addColorStop(0.33, "#00FF00");
+    hueGrad.addColorStop(0.50, "#00FFFF");
+    hueGrad.addColorStop(0.67, "#0000FF");
+    hueGrad.addColorStop(0.83, "#FF00FF");
+    hueGrad.addColorStop(1.0, "#FF0000");
+    ctx.fillStyle = hueGrad;
+    ctx.fillRect(0, 0, c.width, c.height);
+
+    const whiteGrad = ctx.createLinearGradient(0, 0, 0, c.height);
+    whiteGrad.addColorStop(0, "rgba(255,255,255,1)");
+    whiteGrad.addColorStop(0.5, "rgba(255,255,255,0)");
+    whiteGrad.addColorStop(1, "rgba(0,0,0,1)");
+    ctx.fillStyle = whiteGrad;
+    ctx.fillRect(0, 0, c.width, c.height);
+
+    window.__paletteCtx = ctx;
+  }
+  return window.__paletteCtx;
+}
+
+grid.addEventListener('mousedown', (e)=>{
+  pickColorFromGrid(e);
+  const move = (ev)=>pickColorFromGrid(ev);
+  window.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', ()=>window.removeEventListener('mousemove', move), {once:true});
+});
+
+
+function getCursorPositionFromRGB(r, g, b) {
+  const ctx = getPaletteContext();
+  const w = 280, h = 160;
+  const step = 5;
+  let best = {x:0,y:0,dist:Infinity};
+  for(let y=0;y<h;y+=step){
+    for(let x=0;x<w;x+=step){
+      const data = ctx.getImageData(x,y,1,1).data;
+      const dr=data[0]-r, dg=data[1]-g, db=data[2]-b;
+      const dist=dr*dr+dg*dg+db*db;
+      if(dist<best.dist) best={x,y,dist};
+    }
+  }
+  return best;
+}
+function updatePaletteCursor(r,g,b){
+  const pos = getCursorPositionFromRGB(r,g,b);
+  cursor.style.left = pos.x + "px";
+  cursor.style.top = pos.y + "px";
+}
+const _updatePreviewFromRGB = updatePreviewFromRGB;
+updatePreviewFromRGB = function(r,g,b){
+  _updatePreviewFromRGB(r,g,b);
+  updatePaletteCursor(r,g,b);
+};
+</script>
+
+</body>
+</html>
